@@ -6,14 +6,28 @@
 ## First method: defining all parameters via a settings file, and performing the calculations in one go
 # This is only recommended for small datasets
 time fs example2a.cp -v -import example2.settings -go
-# Takes about 2min 45s on a 2020 Macbook Pro
+# Takes about 8min 45s on a 2nd gen core i5 laptop (dual core, 4 cores with hyperthreading)
 # You can specify the number of cores with e.g. -numthreads 4, but fs will use all of them by default.
 # The command has run everything, including 2 independent finestructure runs!
 
 # To examine the output, we will follow the suggested GUI output:
+# > finegui -c example2a_unlinked.chunkcounts.out -m example2a_unlinked_mcmc_run0.xml -t example2a_unlinked_tree_run0.xml
+# Click File->Open
+# Click "Read data file", "Read Pairwise coincidence", "Read Tree"
+# Click "Done"
+# Click File->Manage Second Dataset
+# Change data filename from "run0" to "run1", click "Read data file"
+# Change MCMC filename from "run0" to "run1", click "Read Pairwise coincidence"
+# Change Tree filename from "run0" to "run1", click "Read Tree"
+# Click "Done"
+# View->Pairwise coincidence
+# Second View->Enable alternative second view
+# Second View->Use second dataset
+# Second View->Pairwise coincidence
+## Now run0 is displayed in the bottom left and run1 in the top right. They should be almost identical
 
 ## If you want to access the MCMC traces, they are stored in the file:
-# example2a/stage3/example2a_linked_mcmc.mcmctraces.tab
+# example2a/example2a_linked_x30000_y30000_z60_mcmc.mcmctraces.tab
 ## The Gelman-Rubin convergence diagnostics are stored in the settings file:
 #> grep "mcmcGR" example2a.cp
 # mcmcGR:1.12997,1.0143,1.00456,0.999354,1.00513  # Gelman-Rubin diagnostics obtained from combining MCMC runs, for log-posterior, K,log-beta,delta,f respectively
@@ -82,4 +96,4 @@ time fs example2c.cp -v -phasefiles EuropeSample.small.chrom{1..22}.phase -idfil
 ##############################################
 ## An analysis of the linked data using R
 ln -s ../../FinestructureLibrary.R
-Rscript example2.R ## Take a look at how this works!
+Rscript example2.R ## Take a look at how this works!
