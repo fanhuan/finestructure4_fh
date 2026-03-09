@@ -623,6 +623,7 @@ void DestroyData(struct data_t *Data)
 
 void DestroyIds(struct ids_t *Ids)
 {
+  if(Ids==NULL) return;
   int i;
   for (i=0; i<Ids->nind_tot; i++) {
     free(Ids->id[i]);

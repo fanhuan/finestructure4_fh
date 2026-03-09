@@ -120,6 +120,15 @@ The examples show you how to do this!
 
 fs4 (finestructure) is written by Daniel Lawson (dan.lawson@bristol.ac.uk) COPYRIGHT University of Bristol 2022.
 
+## Changelog
+
+### 2026-03-09 — ChromoPainter segfault fix on truncated recombination file
+
+Fixed a crash (segmentation fault) that occurred when ChromoPainter encountered an error during processing (e.g. a recombination file shorter than expected). The error-handling path uses `setjmp`/`longjmp`; two bugs combined to cause the crash:
+
+1. **`DestroyIds` lacked a NULL guard** (`cp/ChromoPainterData.c`). Unlike the sibling functions `DestroyData`, `clearDonors`, and `clearCopyvec` which all guard against a NULL argument, `DestroyIds` dereferenced its pointer unconditionally. If `longjmp` fired before `Ids` had been assigned, cleanup passed NULL and the function crashed.
+
+2. **`Ids`, `Data`, `Donors`, `Copyvec` were not `volatile`** in `chromopainter()` (`cp/ChromoPainterMutEM.c`). The C standard (§7.13.2.1) states that local variables modified between `setjmp` and `longjmp` have indeterminate values after `longjmp` unless declared `volatile`. The compiler may hold these pointer values in registers; when `longjmp` restores the register snapshot taken at `setjmp` time, the pointers revert to NULL (or stale values), so the cleanup function received bad pointers. Declaring them as `T * volatile` forces the compiler to keep them in memory, ensuring cleanup always sees the current value.
 
 ###############################
 

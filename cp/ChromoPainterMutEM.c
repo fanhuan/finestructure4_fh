@@ -530,11 +530,11 @@ int chromopainter(int argc, char *argv[])
   FILE *mainout=stdout;
   struct param_t *Par=DefaultParam();
   Par->out=mainout;
-  struct donor_t *Donors=NULL;
-  struct copyvec_t *Copyvec=NULL;
+  struct donor_t * volatile Donors=NULL;
+  struct copyvec_t * volatile Copyvec=NULL;
   struct infiles_t *Infiles = defaultInfiles();
-  struct ids_t *Ids=NULL; 
-  struct data_t *Data=NULL; 
+  struct ids_t * volatile Ids=NULL;
+  struct data_t * volatile Data=NULL;
   struct files_t *Outfiles=defaultOutfiles();
 
   if(setjmp(Par->err)){ // this is c error handling; its mad
