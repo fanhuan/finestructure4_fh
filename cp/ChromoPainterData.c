@@ -600,6 +600,109 @@ struct data_t *ReadData(struct infiles_t *Infiles, struct ids_t *Ids,struct para
 }
 
 
+int filterInvariantSNPs(struct data_t *Data, double **p_recom_map, int *p_recom_map_size,
+                        struct ids_t *Ids, struct param_t *Par)
+{
+  int j, hap, k;
+  int new_j, new_map_j;
+  int n_removed = 0;
+
+  int *keep = malloc(Data->nsnps * sizeof(int));
+
+  /* Pass 1: mark each SNP as variant (1) or invariant (0) among included individuals */
+  for (j = 0; j < Data->nsnps; j++) {
+    int first_allele = -1;
+    keep[j] = 0;
+    for (hap = 0; hap < Data->nhapstotal && !keep[j]; hap++) {
+      int ind = hap / Data->hapsperind;
+      if (!Ids->include_ind_vec[ind]) continue;
+      int allele = Data->all_chromosomes[hap][j];
+      if (allele == 8 || allele == 9) continue;  /* gap / missing: skip */
+      if (first_allele < 0) {
+        first_allele = allele;
+      } else if (allele != first_allele) {
+        keep[j] = 1;  /* variant: keep */
+      }
+    }
+    if (!keep[j]) n_removed++;
+  }
+
+  if (n_removed == 0) {
+    free(keep);
+    return 0;
+  }
+
+  int new_nsnps = Data->nsnps - n_removed;
+  if (new_nsnps < 2) {
+    free(keep);
+    fprintf(Par->out,
+      "filterInvariantSNPs: only %d SNP(s) remain after removing invariant sites. "
+      "Cannot proceed. Exiting.\n", new_nsnps);
+    stop_on_error(1, Par->errormode, Par->err);
+    return n_removed; /* unreachable */
+  }
+
+  if (Par->verbose)
+    fprintf(Par->out,
+      "filterInvariantSNPs: removing %d invariant SNP(s), retaining %d.\n",
+      n_removed, new_nsnps);
+
+  /* Pass 2: compact haplotype arrays in-place for included individuals */
+  for (hap = 0; hap < Data->nhapstotal; hap++) {
+    int ind = hap / Data->hapsperind;
+    if (!Ids->include_ind_vec[ind]) continue;
+    new_j = 0;
+    for (j = 0; j < Data->nsnps; j++)
+      if (keep[j]) Data->all_chromosomes[hap][new_j++] = Data->all_chromosomes[hap][j];
+  }
+
+  /* Pass 3: build compacted recom_map with rate merging.
+     recom_map[j] = rate (per bp) between SNP j and SNP j+1.
+     When one or more SNPs between two kept SNPs are removed, the effective
+     rate for the merged interval is the Morgan-distance-weighted average:
+       lambda_new = sum_k(lambda[k] * (pos[k+1]-pos[k])) / (pos[right]-pos[left])
+     A negative rate (unlinked break) in any constituent interval propagates as -1. */
+  double *old_map = *p_recom_map;
+  double *new_map = malloc((new_nsnps - 1) * sizeof(double));
+  int last_kept = -1;
+  new_map_j = 0;
+  for (j = 0; j < Data->nsnps; j++) {
+    if (!keep[j]) continue;
+    if (last_kept >= 0) {
+      double morgan = 0.0;
+      int has_negative = 0;
+      for (k = last_kept; k < j; k++) {
+        if (old_map[k] < 0.0) { has_negative = 1; break; }
+        morgan += old_map[k] * (Data->positions[k + 1] - Data->positions[k]);
+      }
+      if (has_negative) {
+        new_map[new_map_j] = -1.0;
+      } else {
+        double dist = Data->positions[j] - Data->positions[last_kept];
+        new_map[new_map_j] = (dist > 0.0) ? morgan / dist : 0.0;
+      }
+      new_map_j++;
+    }
+    last_kept = j;
+  }
+  free(old_map);
+  *p_recom_map      = new_map;
+  *p_recom_map_size = new_nsnps - 1;
+
+  /* Pass 4: compact positions array in-place */
+  new_j = 0;
+  for (j = 0; j < Data->nsnps; j++)
+    if (keep[j]) Data->positions[new_j++] = Data->positions[j];
+
+  /* Realloc lambda to match new size (not used in computation; freed by DestroyData) */
+  Data->lambda = realloc(Data->lambda, (new_nsnps - 1) * sizeof(double));
+
+  Data->nsnps = new_nsnps;
+  free(keep);
+  return n_removed;
+}
+
+
 void DestroyData(struct data_t *Data)
 {
   if(Data==NULL) return;

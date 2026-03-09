@@ -122,6 +122,10 @@ fs4 (finestructure) is written by Daniel Lawson (dan.lawson@bristol.ac.uk) COPYR
 
 ## Changelog
 
+### 2026-03-09 — Invariant SNP filtering based on ID file
+
+Added `filterInvariantSNPs()` (`cp/ChromoPainterData.c`) which removes SNPs that are invariant among the individuals included via `-idfile` before painting begins. The filter runs after `assignRecMap` so that recombination rates across removed sites are correctly merged as a Morgan-distance-weighted average into a single effective rate for the collapsed interval. Missing/gap alleles (codes 8 and 9) are ignored during the invariant test. A fatal error is raised if fewer than 2 SNPs remain after filtering. The call site is in `chromopainter()` (`cp/ChromoPainterMutEM.c`), between `assignRecMap` and `makeHeaders`, so output file headers reflect the filtered SNP count.
+
 ### 2026-03-09 — ChromoPainter segfault fix on truncated recombination file
 
 Fixed a crash (segmentation fault) that occurred when ChromoPainter encountered an error during processing (e.g. a recombination file shorter than expected). The error-handling path uses `setjmp`/`longjmp`; two bugs combined to cause the crash:

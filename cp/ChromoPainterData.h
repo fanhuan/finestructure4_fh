@@ -74,6 +74,13 @@ extern "C" {
 
   int * getallelic_type_count_vec(struct data_t * Data); // count the number of each allele
 
+  /* Remove SNPs that are invariant among included individuals (per Ids->include_ind_vec).
+     Compacts Data->all_chromosomes, Data->positions, and *p_recom_map in-place.
+     Recombination rates across removed sites are merged as a Morgan-distance-weighted average.
+     Returns the number of SNPs removed. */
+  int filterInvariantSNPs(struct data_t *Data, double **p_recom_map, int *p_recom_map_size,
+                          struct ids_t *Ids, struct param_t *Par);
+
 #endif
   // End the header
 

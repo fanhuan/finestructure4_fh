@@ -666,6 +666,13 @@ int chromopainter(int argc, char *argv[])
   if(Par->vverbose) fprintf(Par->out,"Creating recombination map...\n");
   assignRecMap(Copyvec,Infiles,Data,Par);
 
+  {
+    int nfilt = filterInvariantSNPs(Data, &Copyvec->recom_map, &Copyvec->recom_map_size, Ids, Par);
+    if (nfilt > 0)
+      fprintf(Par->out, "Removed %d invariant SNP(s) based on ID file. Using %d SNPs.\n",
+              nfilt, Data->nsnps);
+  }
+
   Par->EMruns = Par->EMruns + 1; // the final em run is treated as a likelihood calculation only
 
   ////////////////////////////////
