@@ -122,6 +122,16 @@ fs4 (finestructure) is written by Daniel Lawson (dan.lawson@bristol.ac.uk) COPYR
 
 ## Changelog
 
+### 2026-03-09 — New and updated conversion scripts in `scripts/`
+
+Three new Perl scripts were added:
+
+* **`scripts/convertrecfile_v2.pl`** — Updated version of `convertrecfile.pl`. Fixes the hapmap-format column indices to use columns 1 and 3 (0-indexed) instead of 2 and 4, matching the 3-column linkage map format produced by SHAPEIT5.
+
+* **`scripts/impute2chromopainter_v2.pl`** — Updated version of `impute2chromopainter.pl`. Input is now read from STDIN (pipe or redirect) rather than as a positional filename argument, enabling `zcat file.haps.gz | perl impute2chromopainter_v2.pl prefix` usage. Adds `-f` flag to prepend the fineSTRUCTURE-required `0` header line. It also uses a more efficient data structure and requires less ram.
+
+* **`scripts/impute2chromopainter_v3.pl`** — Extends v2 with `-hap <file>` (read `.haps`/`.haps.gz` directly without piping) and `-legend <file>` (supply a bcftools `--haplegendsample` legend file for `.hap` inputs that lack SNP metadata columns). This would output .phase file with the first 5 info columns.
+
 ### 2026-03-09 — Invariant SNP filtering based on ID file
 
 Added `filterInvariantSNPs()` (`cp/ChromoPainterData.c`) which removes SNPs that are invariant among the individuals included via `-idfile` before painting begins. The filter runs after `assignRecMap` so that recombination rates across removed sites are correctly merged as a Morgan-distance-weighted average into a single effective rate for the collapsed interval. Missing/gap alleles (codes 8 and 9) are ignored during the invariant test. A fatal error is raised if fewer than 2 SNPs remain after filtering. The call site is in `chromopainter()` (`cp/ChromoPainterMutEM.c`), between `assignRecMap` and `makeHeaders`, so output file headers reflect the filtered SNP count.
