@@ -122,6 +122,10 @@ fs4 (finestructure) is written by Daniel Lawson (dan.lawson@bristol.ac.uk) COPYR
 
 ## Changelog
 
+### 2026-03-10 — Ne/mu aggregation changed from mean to median
+
+In `fsproject.cpp` (`combineCpEm()`), the aggregation of per-individual Ne and mutation rate (mu) estimates from ChromoPainter EM runs (stages 1 and 6) was changed from arithmetic mean to median. This makes the global parameter estimates more robust to outlier individuals whose EM runs converge to extreme values.
+
 ### 2026-03-09 — New and updated conversion scripts in `scripts/`
 
 Three new Perl scripts were added:

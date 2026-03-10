@@ -1633,15 +1633,19 @@ void FsProject::combineCpEm(int fromstage)
     cerr<<"WARNING: "<<nerrs<<" EM runs (of "<<soutputrootvec.size()<<") failed. Continuing by disregarding those estimates. This may lead to problems."<<endl;
   }
 
-  // combine
+  // combine using median across all per-individual estimates
   if(verbose) cout<<"Combining "<<Nevec.size()<<" Ne values from "<<thisstageemfiles.size()<<" files"<<endl;
   double tNeinf=0,tmuinf=0;
-  tNeinf=0;
-  tmuinf=0;
-  for(unsigned int c1=0;c1<Nevec.size();c1++)tNeinf+=Nevec[c1];
-  for(unsigned int c1=0;c1<muvec.size();c1++)tmuinf+=muvec[c1];
-  tNeinf/=(double)Nevec.size();
-  tmuinf/=(double)muvec.size();
+  {
+    auto vecMedian = [](vector<double> v) -> double {
+      if(v.empty()) return 0.0;
+      size_t n = v.size();
+      std::sort(v.begin(), v.end());
+      return (n % 2 == 0) ? 0.5*(v[n/2-1]+v[n/2]) : v[n/2];
+    };
+    tNeinf = vecMedian(Nevec);
+    tmuinf = vecMedian(muvec);
+  }
   cout<<"Inferred Ne="<<tNeinf<<" and mu="<<tmuinf<<endl;
   if(fromstage==1){
     Neinf=tNeinf;
