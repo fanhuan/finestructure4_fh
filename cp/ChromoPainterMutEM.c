@@ -635,6 +635,14 @@ int chromopainter(int argc, char *argv[])
   validateData(Infiles,Par,Data);
 
 
+  /* Snapshot include_ind_vec BEFORE createDonors() so that filterInvariantSNPs always
+     uses the user-specified set of individuals from the idfile, not any per-recipient
+     modification that populateDonors / readDonorPops may apply. */
+  int *include_vec_snapshot = malloc(Ids->nind_tot * sizeof(int));
+  for (int _si = 0; _si < Ids->nind_tot; _si++)
+    include_vec_snapshot[_si] = Ids->include_ind_vec[_si];
+  int nind_tot_snapshot = Ids->nind_tot;
+
   ////////////////////////////////
   /// DONORS!!!!
   //////////////////////////////////////////////
@@ -667,10 +675,12 @@ int chromopainter(int argc, char *argv[])
   assignRecMap(Copyvec,Infiles,Data,Par);
 
   {
-    int nfilt = filterInvariantSNPs(Data, &Copyvec->recom_map, &Copyvec->recom_map_size, Ids, Par);
+    int nfilt = filterInvariantSNPs(Data, &Copyvec->recom_map, &Copyvec->recom_map_size,
+                                    include_vec_snapshot, nind_tot_snapshot, Par);
     if (nfilt > 0)
       fprintf(Par->out, "Removed %d invariant SNP(s) based on ID file. Using %d SNPs.\n",
               nfilt, Data->nsnps);
+    free(include_vec_snapshot);
   }
 
   Par->EMruns = Par->EMruns + 1; // the final em run is treated as a likelihood calculation only

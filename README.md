@@ -136,6 +136,12 @@ Three new Perl scripts were added:
 
 * **`scripts/impute2chromopainter_v3.pl`** — Extends v2 with `-hap <file>` (read `.haps`/`.haps.gz` directly without piping) and `-legend <file>` (supply a bcftools `--haplegendsample` legend file for `.hap` inputs that lack SNP metadata columns). This would output .phase file with the first 5 info columns.
 
+### 2026-03-13 — Fix: invariant SNP filter now uses a consistent set of individuals across all stage1 EM runs
+
+**Bug**: In stage1 EM, fineSTRUCTURE launches one ChromoPainter process per recipient individual (`-a X X`). `filterInvariantSNPs()` was called *after* `createDonors()`, which internally modifies `Ids->include_ind_vec` as part of the per-recipient donor/recipient setup. This caused the invariant SNP determination to use a slightly different subset of individuals for each EM run, resulting in each individual's log reporting a different "Using N SNPs" count (varying by ~10,000–20,000 SNPs across individuals on the same chromosome).
+
+**Fix**: A snapshot of `Ids->include_ind_vec` is now taken *before* `createDonors()` is called (`cp/ChromoPainterMutEM.c`). This snapshot — which reflects exactly the individuals marked `1` in the idfile — is passed to `filterInvariantSNPs()` instead of the live `Ids` struct. The function signature was updated accordingly (`cp/ChromoPainterData.c`, `cp/ChromoPainterData.h`). All stage1 EM runs for a given chromosome now filter the same invariant SNPs and report the same post-filter SNP count.
+
 ### 2026-03-09 — Invariant SNP filtering based on ID file
 
 Added `filterInvariantSNPs()` (`cp/ChromoPainterData.c`) which removes SNPs that are invariant among the individuals included via `-idfile` before painting begins. The filter runs after `assignRecMap` so that recombination rates across removed sites are correctly merged as a Morgan-distance-weighted average into a single effective rate for the collapsed interval. Missing/gap alleles (codes 8 and 9) are ignored during the invariant test. A fatal error is raised if fewer than 2 SNPs remain after filtering. The call site is in `chromopainter()` (`cp/ChromoPainterMutEM.c`), between `assignRecMap` and `makeHeaders`, so output file headers reflect the filtered SNP count.

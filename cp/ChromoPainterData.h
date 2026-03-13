@@ -79,7 +79,7 @@ extern "C" {
      Recombination rates across removed sites are merged as a Morgan-distance-weighted average.
      Returns the number of SNPs removed. */
   int filterInvariantSNPs(struct data_t *Data, double **p_recom_map, int *p_recom_map_size,
-                          struct ids_t *Ids, struct param_t *Par);
+                          const int *include_vec, int nind_tot, struct param_t *Par);
 
 #endif
   // End the header

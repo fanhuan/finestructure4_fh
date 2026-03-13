@@ -601,7 +601,7 @@ struct data_t *ReadData(struct infiles_t *Infiles, struct ids_t *Ids,struct para
 
 
 int filterInvariantSNPs(struct data_t *Data, double **p_recom_map, int *p_recom_map_size,
-                        struct ids_t *Ids, struct param_t *Par)
+                        const int *include_vec, int nind_tot, struct param_t *Par)
 {
   int j, hap, k;
   int new_j, new_map_j;
@@ -609,13 +609,15 @@ int filterInvariantSNPs(struct data_t *Data, double **p_recom_map, int *p_recom_
 
   int *keep = malloc(Data->nsnps * sizeof(int));
 
-  /* Pass 1: mark each SNP as variant (1) or invariant (0) among included individuals */
+  /* Pass 1: mark each SNP as variant (1) or invariant (0) among included individuals.
+     include_vec is a snapshot taken from the idfile BEFORE createDonors(), so it always
+     reflects the user-specified set regardless of any per-recipient donor setup. */
   for (j = 0; j < Data->nsnps; j++) {
     int first_allele = -1;
     keep[j] = 0;
     for (hap = 0; hap < Data->nhapstotal && !keep[j]; hap++) {
       int ind = hap / Data->hapsperind;
-      if (!Ids->include_ind_vec[ind]) continue;
+      if (ind >= nind_tot || !include_vec[ind]) continue;
       int allele = Data->all_chromosomes[hap][j];
       if (allele == 8 || allele == 9) continue;  /* gap / missing: skip */
       if (first_allele < 0) {
@@ -650,7 +652,7 @@ int filterInvariantSNPs(struct data_t *Data, double **p_recom_map, int *p_recom_
   /* Pass 2: compact haplotype arrays in-place for included individuals */
   for (hap = 0; hap < Data->nhapstotal; hap++) {
     int ind = hap / Data->hapsperind;
-    if (!Ids->include_ind_vec[ind]) continue;
+    if (ind >= nind_tot || !include_vec[ind]) continue;
     new_j = 0;
     for (j = 0; j < Data->nsnps; j++)
       if (keep[j]) Data->all_chromosomes[hap][new_j++] = Data->all_chromosomes[hap][j];
